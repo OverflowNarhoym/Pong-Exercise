@@ -67,7 +67,7 @@ namespace UI
 
         public void Quit()
         {
-            Application.Quit();
+            Application.OpenURL("about:blank");
         }
     }
 }

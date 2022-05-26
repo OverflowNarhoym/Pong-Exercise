@@ -13,10 +13,7 @@ namespace Ball
 
         private float _speed = 410.0f;
         private float _speedMultiplier = 1.07f;
-        private const float XLimit = 11;
 
-        private bool _isRespawning;
-        
         private void Awake()
         {
             _rigidbody2D = GetComponent<Rigidbody2D>();
@@ -25,7 +22,6 @@ namespace Ball
         private void Start()
         {
             IsPaused = true;
-            _isRespawning = false;
             _velocityBeforePause = GetNewDirection();
         }
 
@@ -39,28 +35,13 @@ namespace Ball
             if (Random.Range(0, 2) == 1) vector.x *= -1;
             return vector.normalized * (_speed * Time.fixedDeltaTime);
         }
-
-        private void Update()
-        {
-            if (IsPaused || _isRespawning) return;
-            switch (transform.position.x)
-            {
-                case < -XLimit:
-                    DataManager.Instance.UpdateRightPlayerScore();
-                    StartCoroutine(WaitForNewBall());
-                    break;
-                case > XLimit:
-                    DataManager.Instance.UpdateLeftPlayerScore();
-                    StartCoroutine(WaitForNewBall());
-                    break;
-            }
-        }
-
+        
         private void ResetBall()
         {
             transform.position = Vector3.zero;
             ResetSpeed();
-            _rigidbody2D.velocity = GetNewDirection();
+            if (IsPaused) _velocityBeforePause = GetNewDirection();
+            else _rigidbody2D.velocity = GetNewDirection();
         }
 
         public void ResetSpeed()
@@ -71,11 +52,15 @@ namespace Ball
         private void OnTriggerEnter2D(Collider2D col)
         {
             if (col.gameObject.CompareTag("Player"))
-            {
                 Bounce(false);
-            }
             else if (col.gameObject.CompareTag("Limit"))
                 Bounce(true);
+            else if (col.gameObject.CompareTag("DeathLimit"))
+            {
+                if (transform.position.x < 0) DataManager.Instance.UpdateRightPlayerScore();
+                else DataManager.Instance.UpdateLeftPlayerScore();
+                StartCoroutine(WaitForNewBall());
+            }
         }
 
         private void Bounce(bool up)
@@ -103,10 +88,8 @@ namespace Ball
 
         private IEnumerator WaitForNewBall()
         {
-            _isRespawning = true;
             yield return new WaitForSeconds(0.5f);
             ResetBall();
-            _isRespawning = false;
         }
     }
 }
